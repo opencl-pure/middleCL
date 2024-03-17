@@ -1,86 +1,51 @@
-package opencl
+package middleCL
 
 import (
-	"errors"
-	"strconv"
+	constants "github.com/opencl-pure/constantsCL"
+	pure "github.com/opencl-pure/pureCL"
 	"unsafe"
 )
 
-type BufferData struct {
-	TypeSize uintptr
-	DataSize uintptr
-	Pointer  unsafe.Pointer
+type Buffer struct {
+	B pure.Buffer
 }
 
-type MemFlag uint32
-
-const (
-	MemFlagsReadWrite    MemFlag = 1 << 0
-	MemFlagsWriteOnly    MemFlag = 1 << 1
-	MemFlagsReadOnly     MemFlag = 1 << 2
-	MemFlagsUseHostPtr   MemFlag = 1 << 3
-	MemFlagsAllocHostPtr MemFlag = 1 << 4
-	MemFlagsCopyHostPtr  MemFlag = 1 << 5
-	// reserved
-	MemFlagsHostWriteOnly MemFlag = 1 << 7
-	MemFlagsHostReadOnly  MemFlag = 1 << 8
-	MemFlagsHostNoAccess  MemFlag = 1 << 9
-	// next ones.. (lazy)
-)
-
-type Buffer uint
-
-type memInfo uint32
-
-const (
-	MemInfoSize memInfo = 0x1102
-)
-
-func (b Buffer) getInfo(name memInfo) (uint, error) {
+func (b *Buffer) getInfo(name pure.MemInfo) (uint, error) {
 	info := uint(0)
-	st := getMemObjectInfo(b, name, clSize(unsafe.Sizeof(info)), unsafe.Pointer(&info), nil)
-	if st != CL_SUCCESS {
-		return 0, errors.New("oops at get buffer info: " + strconv.FormatInt(int64(st), 10))
+	st := pure.GetMemObjectInfo(b.B, name, pure.Size(unsafe.Sizeof(info)), unsafe.Pointer(&info), nil)
+	if st != constants.CL_SUCCESS {
+		return 0, pure.StatusToErr(st)
 	}
-
 	return info, nil
 }
 
-func (b Buffer) Size() (uint, error) {
-	return b.getInfo(MemInfoSize)
+func (b *Buffer) Size() (uint, error) {
+	return b.getInfo(pure.MemInfo(constants.CL_MEM_SIZE))
 }
 
-func (b Buffer) Release() error {
-	st := releaseMemObject(b)
-	if st != CL_SUCCESS {
-		return errors.New("oops at release buffer")
-	}
-
-	return nil
+func (b *Buffer) Release() error {
+	return pure.StatusToErr(pure.ReleaseMemObject(b.B))
 }
 
 // GL
 
-func (b Buffer) GetGLObjectInfo() (CLGLObjectType, error) {
-	var objectType CLGLObjectType
-
-	st := getGLObjectInfo(b, &objectType, nil)
-	if st != CL_SUCCESS {
-		return 0, errors.New("oops at get gl object info")
+func (b *Buffer) GetGLObjectInfo() (pure.CLGLObjectType, error) {
+	var objectType pure.CLGLObjectType
+	st := pure.GetGLObjectInfo(b.B, &objectType, nil)
+	if st != constants.CL_SUCCESS {
+		return 0, pure.StatusToErr(st)
 	}
-
 	return objectType, nil
 }
 
-func (b Buffer) GetGLTextureInfo(info CLGLTextureInfo) (uint32, error) {
+func (b *Buffer) GetGLTextureInfo(info pure.CLGLTextureInfo) (uint32, error) {
 	var results = []uint32{0}
-
-	st := getGLTextureInfo(
-		b, info, clSize(unsafe.Sizeof(&results[0])), unsafe.Pointer(&results[0]), nil,
+	st := pure.GetGLTextureInfo(
+		b.B, info, pure.Size(unsafe.Sizeof(&results[0])),
+		unsafe.Pointer(&results[0]), nil,
 	)
-	if st != CL_SUCCESS {
-		return 0, errors.New("oops at get gl texture info")
+	if st != constants.CL_SUCCESS {
+		return 0, pure.StatusToErr(st)
 	}
-
 	return results[0], nil
 }

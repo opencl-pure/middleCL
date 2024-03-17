@@ -1,194 +1,144 @@
-package opencl
+package middleCL
 
 import (
-	"errors"
-	"strconv"
+	constants "github.com/opencl-pure/constantsCL"
+	pure "github.com/opencl-pure/pureCL"
 	"unsafe"
 )
 
-type commandQueueProperties uint32
-
-type CommandQueue uint
-
-func (cq CommandQueue) EnqueueBarrier() error {
-	st := enqueueBarrier(cq)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue barrier")
-	}
-
-	return nil
+type CommandQueue struct {
+	C pure.CommandQueue
 }
 
-func (cq CommandQueue) EnqueueNDRangeKernel(kernel Kernel, workDim uint, globalOffsets, globalWorkSizes, localWorkSizes []uint64) error {
-	var offsets, gsizes, lsizes []clSize
+func (cq *CommandQueue) EnqueueBarrier() error {
+	return pure.StatusToErr(pure.EnqueueBarrier(cq.C))
+}
+
+func (cq *CommandQueue) EnqueueNDRangeKernel(kernel *Kernel, workDim uint, globalOffsets, globalWorkSizes, localWorkSizes []uint64) error {
+	var offsets, gsizes, lsizes []pure.Size
 	if len(globalOffsets) > 0 {
-		offsets = make([]clSize, len(globalOffsets))
+		offsets = make([]pure.Size, len(globalOffsets))
 		for i := range globalOffsets {
-			offsets[i] = clSize(globalOffsets[i])
+			offsets[i] = pure.Size(globalOffsets[i])
 		}
 	}
 	if len(globalWorkSizes) > 0 {
-		gsizes = make([]clSize, len(globalWorkSizes))
+		gsizes = make([]pure.Size, len(globalWorkSizes))
 		for i := range globalWorkSizes {
-			gsizes[i] = clSize(globalWorkSizes[i])
+			gsizes[i] = pure.Size(globalWorkSizes[i])
 		}
 	}
 	if len(localWorkSizes) > 0 {
-		lsizes = make([]clSize, len(localWorkSizes))
+		lsizes = make([]pure.Size, len(localWorkSizes))
 		for i := range localWorkSizes {
-			lsizes[i] = clSize(localWorkSizes[i])
+			lsizes[i] = pure.Size(localWorkSizes[i])
 		}
 	}
-	st := enqueueNDRangeKernel(
-		cq, kernel, workDim, offsets, gsizes, lsizes, 0, nil, nil,
-	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue nd range kernel: " + strconv.FormatInt(int64(st), 10))
-	}
-
-	return nil
+	return pure.StatusToErr(pure.EnqueueNDRangeKernel(
+		cq.C, kernel.K, workDim, offsets, gsizes, lsizes, 0, nil, nil,
+	))
 }
 
-func (cq CommandQueue) EnqueueReadBuffer(buffer Buffer, blockingRead bool, data *BufferData) error {
-	st := enqueueReadBuffer(
-		cq, buffer, blockingRead, 0, clSize(data.DataSize), data.Pointer, 0, nil, nil,
-	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue read buffer: " + strconv.FormatInt(int64(st), 10))
-	}
-
-	return nil
+func (cq *CommandQueue) EnqueueReadBuffer(buffer *Buffer, blockingRead bool, data *pure.BufferData) error {
+	return pure.StatusToErr(pure.EnqueueReadBuffer(
+		cq.C, buffer.B, blockingRead, 0, pure.Size(data.DataSize), data.Pointer, 0, nil, nil,
+	))
 }
 
-func (cq CommandQueue) EnqueueReadImage(image Buffer, blockingRead bool, data *ImageData) error {
-	origin := [3]clSize{clSize(data.Origin[0]), clSize(data.Origin[1]), clSize(data.Origin[2])}
-	region := [3]clSize{clSize(data.Region[0]), clSize(data.Region[1]), clSize(data.Region[2])}
-	st := enqueueReadImage(
-		cq, image, blockingRead, origin, region, 0, 0, data.Pointer, 0, nil, nil,
-	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue read image: " + strconv.FormatInt(int64(st), 10))
-	}
-
-	return nil
+func (cq *CommandQueue) EnqueueReadImage(image *Image, blockingRead bool, data *pure.ImageData) error {
+	origin := [3]pure.Size{pure.Size(data.Origin[0]), pure.Size(data.Origin[1]), pure.Size(data.Origin[2])}
+	region := [3]pure.Size{pure.Size(data.Region[0]), pure.Size(data.Region[1]), pure.Size(data.Region[2])}
+	return pure.StatusToErr(pure.EnqueueReadImage(
+		cq.C, image.B, blockingRead, origin, region, 0, 0, data.Pointer, 0, nil, nil,
+	))
 }
 
-func (cq CommandQueue) EnqueueWriteBuffer(buffer Buffer, blockingWrite bool, data *BufferData) error {
-	st := enqueueReadBuffer(
-		cq, buffer, blockingWrite, 0, clSize(data.DataSize), data.Pointer, 0, nil, nil,
-	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue nd range kernel")
-	}
-
-	return nil
+func (cq *CommandQueue) EnqueueWriteImage(image *Image, blockingRead bool, data *pure.ImageData) error {
+	origin := [3]pure.Size{pure.Size(data.Origin[0]), pure.Size(data.Origin[1]), pure.Size(data.Origin[2])}
+	region := [3]pure.Size{pure.Size(data.Region[0]), pure.Size(data.Region[1]), pure.Size(data.Region[2])}
+	return pure.StatusToErr(pure.EnqueueWriteImage(
+		cq.C, image.B, blockingRead, origin, region, 0, 0, data.Pointer, 0, nil, nil,
+	))
 }
 
-type MapFlag uint32
+func (cq *CommandQueue) EnqueueWriteBuffer(buffer *Buffer, blockingWrite bool, data *pure.BufferData) error {
+	return pure.StatusToErr(pure.EnqueueWriteBuffer(
+		cq.C, buffer.B, blockingWrite, 0, pure.Size(data.DataSize), data.Pointer, 0, nil, nil,
+	))
+}
 
-const (
-	MapFlagRead                  MapFlag = (1 << 0)
-	MapFlagWrite                 MapFlag = (1 << 1)
-	MapFlagWriteInvalidateRegion MapFlag = (1 << 2)
-)
-
-func (cq CommandQueue) EnqueueMapBuffer(buffer Buffer, blockingMap bool, flags []MapFlag, data *BufferData) error {
-	var st clStatus
-
-	mapFlags := MapFlag(0)
+func (cq *CommandQueue) EnqueueMapBuffer(buffer Buffer, blockingMap bool, flags []pure.MapFlag, data *pure.BufferData) error {
+	var st pure.Status
+	mapFlags := pure.MapFlag(0)
 	for _, f := range flags {
 		mapFlags |= f
 	}
-	ptr := enqueueMapBuffer(
-		cq, buffer, blockingMap, mapFlags, 0, clSize(data.DataSize), 0, nil, nil, &st,
+	ptr := pure.EnqueueMapBuffer(
+		cq.C, buffer.B, blockingMap, mapFlags, 0, pure.Size(data.DataSize), 0, nil, nil, &st,
 	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue map buffer: " + strconv.FormatInt(int64(st), 10))
+	if st != constants.CL_SUCCESS {
+		return pure.StatusToErr(st)
 	}
 	data.Pointer = unsafe.Pointer(ptr)
 
 	return nil
 }
 
-func (cq CommandQueue) EnqueueMapImage(image Buffer, blockingMap bool, flags []MapFlag, data *ImageData) error {
-	var st clStatus
-
-	mapFlags := MapFlag(0)
+func (cq *CommandQueue) EnqueueMapImage(image Buffer, blockingMap bool, flags []pure.MapFlag, data *pure.ImageData) error {
+	var st pure.Status
+	mapFlags := pure.MapFlag(0)
 	for _, f := range flags {
 		mapFlags |= f
 	}
-	origin := [3]clSize{clSize(data.Origin[0]), clSize(data.Origin[1]), clSize(data.Origin[2])}
-	region := [3]clSize{clSize(data.Region[0]), clSize(data.Region[1]), clSize(data.Region[2])}
-	rowpitch, slicepitch := (*clSize)(&data.RowPitch), (*clSize)(&data.SlicePitch)
-	ptr := enqueueMapImage(
-		cq, image, blockingMap, mapFlags, origin, region, rowpitch, slicepitch, 0, nil, nil, &st,
+	origin := [3]pure.Size{pure.Size(data.Origin[0]), pure.Size(data.Origin[1]), pure.Size(data.Origin[2])}
+	region := [3]pure.Size{pure.Size(data.Region[0]), pure.Size(data.Region[1]), pure.Size(data.Region[2])}
+	rowpitch, slicepitch := (*pure.Size)(&data.RowPitch), (*pure.Size)(&data.SlicePitch)
+	ptr := pure.EnqueueMapImage(
+		cq.C, image.B, blockingMap, mapFlags, origin, region, rowpitch, slicepitch, 0, nil, nil, &st,
 	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue map image: " + strconv.FormatInt(int64(st), 10))
+	if st != constants.CL_SUCCESS {
+		return pure.StatusToErr(st)
 	}
 	data.Pointer = unsafe.Pointer(ptr)
-
 	return nil
 }
 
-func (cq CommandQueue) EnqueueUnmapBuffer(buffer Buffer, data *BufferData) error {
-	st := enqueueUnmapMemObject(
-		cq, buffer, data.Pointer, 0, nil, nil,
-	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue unmap buffer: " + strconv.FormatInt(int64(st), 10))
-	}
-
-	return nil
+func (cq *CommandQueue) EnqueueUnmapBuffer(buffer Buffer, data *pure.BufferData) error {
+	return pure.StatusToErr(pure.EnqueueUnmapMemObject(
+		cq.C, buffer.B, data.Pointer, 0, nil, nil,
+	))
 }
 
-func (cq CommandQueue) Finish() error {
-	st := finishCommandQueue(cq)
-	if st != CL_SUCCESS {
-		return errors.New("oops at finish command queue")
-	}
-
-	return nil
+func (cq *CommandQueue) Finish() error {
+	return pure.StatusToErr(pure.FinishCommandQueue(cq.C))
 }
 
-func (cq CommandQueue) Flush() error {
-	st := flushCommandQueue(cq)
-	if st != CL_SUCCESS {
-		return errors.New("oops at flush command queue")
-	}
-
-	return nil
+func (cq *CommandQueue) Flush() error {
+	return pure.StatusToErr(pure.FlushCommandQueue(cq.C))
 }
 
-func (cq CommandQueue) Release() error {
-	st := releaseCommandQueue(cq)
-	if st != CL_SUCCESS {
-		return errors.New("oops at release command queue")
-	}
-
-	return nil
+func (cq *CommandQueue) Release() error {
+	return pure.StatusToErr(pure.ReleaseCommandQueue(cq.C))
 }
 
 // GL
 
-func (cq CommandQueue) EnqueueAcquireGLObjects(objects []Buffer) error {
-	st := enqueueAcquireGLObjects(
-		cq, uint32(len(objects)), unsafe.Pointer(&objects[0]), 0, nil, nil,
-	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue acquire GL objects: " + strconv.FormatInt(int64(st), 10))
+func (cq *CommandQueue) EnqueueAcquireGLObjects(objects []Buffer) error {
+	obsCL := make([]pure.Buffer, len(objects))
+	for i := 0; i < len(obsCL); i++ {
+		obsCL[i] = objects[i].B
 	}
-
-	return nil
+	return pure.StatusToErr(pure.EnqueueAcquireGLObjects(
+		cq.C, uint32(len(objects)), unsafe.Pointer(&obsCL[0]), 0, nil, nil,
+	))
 }
 
-func (cq CommandQueue) EnqueueReleaseGLObjects(objects []Buffer) error {
-	st := enqueueReleaseGLObjects(
-		cq, uint32(len(objects)), unsafe.Pointer(&objects[0]), 0, nil, nil,
-	)
-	if st != CL_SUCCESS {
-		return errors.New("oops at enqueue release GL objects: " + strconv.FormatInt(int64(st), 10))
+func (cq *CommandQueue) EnqueueReleaseGLObjects(objects []Buffer) error {
+	obsCL := make([]pure.Buffer, len(objects))
+	for i := 0; i < len(obsCL); i++ {
+		obsCL[i] = objects[i].B
 	}
-
-	return nil
+	return pure.StatusToErr(pure.EnqueueReleaseGLObjects(
+		cq.C, uint32(len(objects)), unsafe.Pointer(&obsCL[0]), 0, nil, nil,
+	))
 }

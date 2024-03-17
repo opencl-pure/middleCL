@@ -1,3 +1,7 @@
-package opencl
+package middleCL
 
-type Event uint
+import (
+	pure "github.com/opencl-pure/pureCL"
+)
+
+type Event pure.Event

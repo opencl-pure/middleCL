@@ -1,39 +1,51 @@
-package opencl
+package middleCL
 
 import (
 	"errors"
-	"strconv"
-	"unsafe"
+	pure "github.com/opencl-pure/pureCL"
 )
 
-type Kernel uint
+type Kernel struct {
+	K pure.Kernel
+}
 
 type KernelArg struct {
-	ptr  unsafe.Pointer
-	size clSize
+	KA pure.KernelArg
 }
 
-func NewKernelArg[T any](arg *T) KernelArg {
-	return KernelArg{
-		ptr:  unsafe.Pointer(arg),
-		size: clSize(unsafe.Sizeof(*arg)),
+func NewKernelArg(arg interface{}) (*KernelArg, error) {
+	switch val := arg.(type) {
+	case uint8:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case int8:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case uint16:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case int16:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case uint32:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case int32:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case float32:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case uint64:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case int64:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case float64:
+		return &KernelArg{KA: pure.NewKernelArg(&val)}, nil
+	case *Buffer:
+		return &KernelArg{KA: pure.NewKernelArg(&val.B)}, nil
+	default:
+		return nil, errors.New("Unsuported arg")
 	}
 }
 
-func (k Kernel) SetArg(index uint, arg KernelArg) error {
-	st := setKernelArg(k, index, arg.size, arg.ptr)
-	if st != CL_SUCCESS {
-		return errors.New("oops at set kernel arg: " + strconv.FormatInt(int64(st), 10))
-	}
-
-	return nil
+func (k *Kernel) SetArg(index uint, arg *KernelArg) error {
+	return k.K.SetArg(index, arg.KA)
 }
 
-func (k Kernel) Release() error {
-	st := releaseKernel(k)
-	if st != CL_SUCCESS {
-		return errors.New("oops at release kernel")
-	}
-
-	return nil
+func (k *Kernel) Release() error {
+	return k.K.Release()
 }
