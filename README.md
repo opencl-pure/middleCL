@@ -1,5 +1,5 @@
 # pure
-This is real fork of [Zyko0's opencl](https://github.com/Zyko0/go-opencl), big thank. My modification call [pureCL](https://github.com/opencl-pure/pureCL) as button layer. <br>
+This is real fork of [Zyko0's opencl](https://github.com/Zyko0/go-opencl), big thank. My modification call [pureCL(simplyfy Zyko0's opencl)](https://github.com/opencl-pure/pureCL) as button layer. <br>
 This package provide higher level wrapper to OpenCL,
 that means it provide GO error handling, handle OpenCL errors to GO errors, 
 but still it is near 1:1 wrapper
