@@ -13,6 +13,6 @@ func GetImageBufferData(img image.RGBA) *pure.ImageData {
 	return pure.GetImageBufferData(img)
 }
 
-func Init(v pure.Version) error {
-	return pure.Init(v)
+func Init(v pure.Version, paths ...string) error {
+	return pure.Init(v, paths...)
 }

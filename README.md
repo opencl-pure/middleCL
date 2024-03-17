@@ -1,19 +1,10 @@
 # pure
-This is real fork of [Zyko0's opencl](https://github.com/Zyko0/go-opencl), big thank. My modification call [pureCL(simplyfy Zyko0's opencl)](https://github.com/opencl-pure/pureCL) as button layer. <br>
+This is real fork of [Zyko0's opencl](https://github.com/Zyko0/go-opencl), big thank. My modification call [pureCL](https://github.com/opencl-pure/pureCL) as button layer. <br>
 This package provide higher level wrapper to OpenCL,
 that means it provide GO error handling, handle OpenCL errors to GO errors, 
 but still it is near 1:1 wrapper
 # goal
--  low level wrap of OpenCL 
--  GO error handling
--  try to have all functions of OpenCL (so if you have some, give PR)
--  easy to multiplatform (thank [purego](https://github.com/ebitengine/purego))
--  easy find path (custumize path to openclLib shared library)
--  easy to compile, we do not need cgo and not need knowing link to shared library
--  try [purego](https://github.com/ebitengine/purego) and bring opencl on android without complicate link
-# not goal
-- be faster as cgo version, [purego](https://github.com/ebitengine/purego) is using same mechanism as cgo 
-# examples
+This package is providing low level wrap of OpenCL people who like control OpenCL, but they also like (they use to) GO error 
 
 # example
 
@@ -41,7 +32,8 @@ var (
 )
 
 func main() {
-	err := middle.Init(pure.Version2_0)
+	//init with version of OpenCL and variadic special paths (if you know)
+	err := middle.Init(pure.Version2_0/*, "special_path1/openclLib.dll", "special_path1/openclLib.so" */)
 	if err != nil {
 		log.Fatal("err:", err)
 	}
