@@ -4,9 +4,8 @@ This package provide higher level wrapper to OpenCL,
 that means it provide GO error handling, handle OpenCL errors to GO errors, 
 but still it is near 1:1 wrapper
 # goal
-- low level wrap of OpenCL 
+-  low level wrap of OpenCL 
 -  GO error handling
-  
 -  try to have all functions of OpenCL (so if you have some, give PR)
 -  easy to multiplatform (thank [purego](https://github.com/ebitengine/purego))
 -  easy find path (custumize path to openclLib shared library)
